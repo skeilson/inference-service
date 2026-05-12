@@ -187,7 +187,6 @@ async def main():
 
     print("\n" + "═" * 60)
     print("Benchmark complete. Save these numbers — we'll compare")
-    print("them directly against V2 and V3.")
     print("═" * 60 + "\n")
 
 
