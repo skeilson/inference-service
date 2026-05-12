@@ -1,5 +1,25 @@
 This README contains an analysis of this example project and how each of the architectural improvements changed how latency and throughput manifest and can be observed. 
 
+## Table of Contents
+- [Executive Summary](#executive-summary)
+- [Tech Stack](#tech-stack-applies-to-all-versions)
+- [Benchmarking Methodology](#benchmarking-methodology)
+- [Version One](#version-one)
+  - [Architecture](#architecture)
+  - [Results](#version-one-results)
+  - [Warm/Cold Distinction](#important-observation---warmcold-distinction)
+  - [Analysis](#analyses-for-v1)
+- [Version Two](#version-two)
+  - [Architecture](#architecture-1)
+  - [Results](#version-two-results)
+  - [Analysis](#analyses-for-v2)
+- [Version Three](#version-three)
+  - [Architecture](#architecture-2)
+  - [Results](#version-3-results)
+  - [Analysis](#analyses-for-v3)
+- [Conclusion](#conclusion)
+- [How to Run This Yourself](#how-to-run-this-yourself)
+
 # Executive Summary:
 Inference services encompass the “doing part” of AI/ML by taking an input and producing an output based on a trained model. These services are able to handle a large volume of requests in a sustainable, scalable way that has broader applications than a single data scientist building and training a model for a singular purpose. Inference companies are able to combat the bottleneck by selling an operational layer in order to make these models usable at scale. 
 
@@ -392,3 +412,70 @@ This is a significant, measurable improvement, particularly when concurrency=50.
 Lastly, I can compare across all three versions by looking at Experiment 3. On the same hardware, with the same model, I clearly observed a 6x throughput improvement across all three versions. Throughput went from 131 requests per second in V1 to 150 requests per second in V2 to a whopping 831 requests per second in V3 while also reducing the `p50` latency across the board.
 
 With all these adjustments and changes across versions, this is still not an appropriate production-ready approach. An ideal production system would decouple the queuing service from the main service in order to introduce a more robust, fault-tolerant system; if the service topples, the queue remains intact and requests can resume once the service is restored. Additionally, a more appropriate production system would consider adaptive batching and length aware batching to better handle variability in traffic pattern spikes and input length variability. Looking forward, one should consider the next logical step - GPU. Improving the hardware by introducing parallelism would have a dramatic impact on efficiency. 
+
+
+# How to Run This Yourself
+
+### Prerequisites
+- Python 3.12+
+- Git
+
+### Setup
+
+**1. Clone the repository**
+```bash
+git clone https://github.com/skeilson/inference-service.git
+cd inference-service
+```
+
+**2. Create and activate the virtual environment**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate  # Mac/Linux
+.venv\Scripts\activate     # Windows
+```
+
+**3. Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+**Note:** This will download PyTorch and sentence-transformers (~500MB). First install will take a few minutes.
+
+### Running the Service
+
+You'll need two terminal windows, both with `.venv` active.
+
+**Terminal 1 — Start the service**
+
+For V1:
+```bash
+uvicorn v1.service:app --port 8000
+```
+
+For V2:
+```bash
+uvicorn v2.service:app --port 8000
+```
+
+For V3:
+```bash
+uvicorn v3.service:app --port 8000
+```
+
+**Terminal 2 — Validate the service is running**
+```bash
+curl -X POST http://localhost:8000/embed \
+  -H "Content-Type: application/json" \
+  -d '{"text": "the quick brown fox"}'
+```
+
+You should receive a JSON response with 384 numbers and an `inference_ms` value.
+
+### Running the Benchmark
+
+With the service running in Terminal 1, run the following in Terminal 2:
+```bash
+python benchmark/benchmark.py
+```
+
+The benchmark runs three experiments automatically and prints results to the terminal. Repeat for each version to compare results directly.
