@@ -1,0 +1,14 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Model cache (sentence-transformers downloads here)
+.cache/
+
+# OS files
+.DS_Store
